@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.openai/
+.sites-runtime/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+qa/main-qa.mjs
+qa/sample.png

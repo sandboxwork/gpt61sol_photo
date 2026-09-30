@@ -1,0 +1,1 @@
+{"type":"module","dependencies":{"@napi-rs/canvas":"^0.1.80","happy-dom":"^20.0.0"}}

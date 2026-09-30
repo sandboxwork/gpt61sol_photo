@@ -1,0 +1,12 @@
+import './core-check.mjs';
+import assert from 'node:assert/strict';
+import {Editor,newLayer,canvas,resizeLayer} from '../atelier/src/engine.js';
+const e=new Editor();e.doc={name:'order',width:30,height:30,layers:[],guides:[]};
+const add=(name,color,extra={})=>e.add(newLayer('shape',name,{w:30,h:30,color,...extra}));
+const bg=add('bg','#fff'),red=add('red','#ff0000'),blue=add('blue','#0000ff'),top=add('top','#00ff00',{x:20,y:20,w:10,h:10});
+const px=async()=>[...(await e.render()).getContext('2d').getImageData(5,5,1,1).data];
+e.selected=[red.id];const original=await px();e.group();const g=e.layer();assert.deepEqual(await px(),original);assert.equal(e.hit({x:5,y:5}).id,blue.id);e.reorder(1);assert.deepEqual(await px(),[255,0,0,255]);assert.equal(e.hit({x:5,y:5}).id,red.id);e.reorder(-1);assert.deepEqual(await px(),original);await e.merge();assert.deepEqual(await px(),original);assert.equal(e.doc.layers.filter(l=>l.parent===null).at(-1).id,top.id);
+const parent=newLayer('group','parent',{w:30,h:30});e.add(parent);const inner=newLayer('shape','inner',{w:10,h:10,color:'#ff00ff',parent:parent.id});e.add(inner);const before=await px();await e.merge();assert.equal(e.layer().parent,parent.id);assert.deepEqual(await px(),before);
+const text=newLayer('text','text',{w:100,h:100,fontSize:40,text:'Hello'});resizeLayer(text,200,50);assert.equal(text.fontSize,20);assert.equal(text.textScaleX,4);
+const path=newLayer('path','path',{w:10,h:10,points:[{x:2,y:3,c1:{x:1,y:1},c2:{x:4,y:5}}]});resizeLayer(path,20,30);assert.deepEqual(path.points[0],{x:4,y:9,c1:{x:2,y:3},c2:{x:8,y:15}});
+console.log('PASS: group placement/hit order, hierarchy-aware reorder, merge keeps stacking and parent, text/path resize');

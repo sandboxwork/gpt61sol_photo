@@ -1,0 +1,63 @@
+name: Build and deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: |
+            atelier/package-lock.json
+            qa/package-lock.json
+      - name: Install application dependencies
+        run: npm ci
+        working-directory: atelier
+      - name: Install test dependencies
+        run: npm ci
+        working-directory: qa
+      - name: Check image processing and layer order
+        run: node order-check.mjs
+        working-directory: qa
+      - name: Check editor interactions
+        run: node ui-check.mjs
+        working-directory: qa
+      - name: Build site
+        run: npm run build
+        working-directory: atelier
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Upload site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: atelier/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy site
+        id: deployment
+        uses: actions/deploy-pages@v4
